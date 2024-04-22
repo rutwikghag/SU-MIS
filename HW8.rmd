@@ -1,0 +1,131 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+# Intro to Data Science HW 8
+##### Copyright Jeffrey Stanton, Jeffrey Saltz, and Jasmina Tacheva
+
+
+```{r}
+#Rutwik Ghag
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+```
+
+The chapter on **linear models** (“Lining Up Our Models”) introduces **linear predictive modeling** using the tool known as **multiple regression**. The term “multiple regression” has an odd history, dating back to an early scientific observation of a phenomenon called **“regression to the mean.”** These days, multiple regression is just an interesting name for using **linear modeling** to assess the **connection between one or more predictor variables and an outcome variable**. 
+
+
+<br>In this exercise, you will **predict Ozone air levels from three predictors**.
+
+A.	We will be using the **airquality** data set available in R. Copy it into a dataframe called **air** and use the appropriate functions to **summarize the data**. 
+
+
+```{r}
+library(ggplot2)
+library(MASS)
+air <- data.frame(airquality)
+#View(airquality)
+summary(air)
+
+```
+
+B.	In the analysis that follows, **Ozone** will be considered as the **outcome variable**, and **Solar.R**, **Wind**, and **Temp** as the **predictors**. Add a comment to briefly explain the outcome and predictor variables in the dataframe using **?airquality**.
+
+
+```{r}
+#the ozone variable has 37 na values. Solar.R, wind and Temp are variables that are explaining current weather condition that lead to the ozone value
+#there are no NA values in wind and temp. Ozone and Solar.R have 37 and 7 NA values respectively.
+
+```
+
+C.	Inspect the outcome and predictor variables – are there any missing values? Show the code you used to check for that.
+
+
+```{r}
+air[is.na(air$Ozone),]
+air[is.na(air$Solar),]
+air[is.na(air$Wind),]
+air[is.na(air$Temp),]
+#ozone and solar have missing values while wind and temp don't.
+```
+
+D.	Use the **na_interpolation()** function from the **imputeTS package** (remember this was used in a previous HW) to fill in the missing values in each of the 4 columns. Make sure there are no more missing values using the commands from Step C.
+
+
+```{r}
+library(imputeTS)
+
+air$Ozone <- na_interpolation(air$Ozone)
+air$Solar.R <- na_interpolation(air$Solar.R)
+#View(air)
+
+```
+
+E.	Create **3 bivariate scatterplots (X-Y) plots** (using ggplot), for each of the predictors with the outcome. **Hint:** In each case, put **Ozone on the Y-axis**, and a **predictor on the X-axis**. Add a comment to each, describing the plot and explaining whether there appears to be a **linear relationship** between the outcome variable and the respective predictor.
+
+
+```{r}
+ggplot(data = air) + aes(x=Ozone,y=Solar.R) + geom_point() +geom_smooth(method = "lm", se = FALSE)
+
+ggplot(data = air) + aes(x=Ozone,y=Wind) + geom_point() +geom_smooth(method = "lm", se = FALSE)
+
+ggplot(data = air) + aes(x=Ozone,y=Temp) + geom_point() +geom_smooth(method = "lm", se = FALSE)
+#all three plots have a linear relationship.
+
+```
+
+F.	Next, create a **simple regression model** predicting **Ozone based on Wind**, using the **lm( )** command. In a comment, report the **coefficient** (aka **slope** or **beta weight**) of **Wind** in the regression output and, **if it is statistically significant**, **interpret it** with respect to **Ozone**. Report the **adjusted R-squared** of the model and try to explain what it means. 
+
+
+```{r}
+lmout <- lm(Ozone~Wind,data=air)
+summary(lmout)
+#it is statistically significant since the p value of wind predictor variable is negative i.e. it is less that 0.05 and furthermore there are threee star. Hence Wind is a good prediction variable for variable Ozone.
+```
+
+G.	Create a **multiple regression model** predicting **Ozone** based on **Solar.R**, **Wind**, and **Temp**.<br> **Make sure to include all three predictors in one model – NOT three different models each with one predictor.**
+
+
+```{r}
+lmout10 <- lm(Ozone~Solar.R + Wind + Temp ,data=air)
+summary(lmout10)
+```
+
+H.	Report the **adjusted R-Squared** in a comment – how does it compare to the adjusted R-squared from Step F? Is this better or worse? Which of the predictors are **statistically significant** in the model? In a comment, report the coefficient of each predictor that is statistically significant. Do not report the coefficients for predictors that are not significant.
+
+
+```{r}
+#the adjusted r-squared values of F is 0.2527 and G is 0.4207. Out of the two, G is a better prediction model because here the three variables are used to create a single prediction model instead of creating separate models and combining them.
+```
+
+I.	Create a one-row data frame like this: 
+
+
+```{r}
+predDF <- data.frame(Solar.R=290, Wind=13, Temp=61)
+```
+
+ and use it with the **predict( )** function to predict the **expected value of Ozone**:
+
+
+```{r}
+predict(lmout10,predDF)
+```
+
+J.	Create an additional **multiple regression model**, with **Temp** as the **outcome variable**, and the other **3 variables** as the **predictors**. 
+
+Review the quality of the model by commenting on its **adjusted R-Squared**.  
+
+
+```{r}
+lmout100 <- lm(Temp~Ozone+Solar.R + Wind ,data=air)
+summary(lmout100)
+#the adjusted R-Squared value of this prediction model is 0.403
+#the quality of the model is good because the value of adjusted r-squared is high.
+```

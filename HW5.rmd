@@ -1,0 +1,115 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+# Intro to Data Science - HW 5
+
+##### Copyright 2021, Jeffrey Stanton, Jeffrey Saltz, and Jasmina Tacheva
+
+
+```{r}
+# Rutwik Ghag
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+```
+
+Reminders of things to practice from previous weeks: <br>
+Descriptive statistics: 	mean( ) max( ) min( )<br>
+Coerce to numeric:		as.numeric( )<br>
+
+## Part 1: Use the Starter Code 
+
+Below, I have provided a starter file to help you. <br>
+
+Each of these lines of code **must be commented** (the comment must that explains what is going on, so that I know you understand the code and results).
+
+
+```{r}
+library(RCurl) # install the RCurl library
+library(jsonlite) # install the JSON library
+dataset <- getURL("https://intro-datascience.s3.us-east-2.amazonaws.com/role.json") # copy the contents of the JSON file from the mentioned URL into the variable
+readlines <- jsonlite::fromJSON(dataset) # convert the JSON data into an R object 
+df <- readlines$objects$person # store the data in readlines in a data frame
+```
+
+A.	Explore the **df** dataframe (e.g., using head() or whatever you think is best).
+
+
+```{r}
+head(df)
+str(df)
+#View(df)
+```
+
+B.	Explain the dataset <br>
+o	What is the dataset about? <br>
+o	How many rows are there and what does a row represent?<br>
+o	How many columns and what does each column represent?<br>
+
+
+
+```{r}
+# The dataset is about senators and their information like name, gender, twitter id
+```
+
+## Part 2: Investigate the resulting dataframe 
+
+C.	How many senators are women? 
+
+
+```{r}
+sum(df$gender=="female")
+
+```
+
+D.	How many senators have a YouTube account?  
+
+
+```{r}
+sum(!is.na(df$youtubeid))
+```
+
+E.	How many women senators have a YouTube account?
+
+
+```{r}
+sum(df$gender=="female" & !is.na(df$youtubeid))
+```
+
+F.	Create a new dataframe called **youtubeWomen** that only includes women senators who have a YouTube account.   
+
+
+```{r}
+youtubeWomen <- df[df$gender=="female" & !is.na(df$youtubeid),]
+```
+
+G.	What does running this line of code do? Explain in a comment: 
+
+
+```{r}
+youtubeWomen$year <- substr(youtubeWomen$birthday,1,4)
+# adds a new column, year, in the df youtubeWomen to store the birth year
+```
+
+H.	Use this new variable to calculate the mean **birthyear** in **youtubeWomen**. <br>
+**Hint:** You may need to convert it to numeric first.
+
+
+```{r}
+mean(as.numeric(youtubeWomen$year))
+
+```
+
+I.	Make a histogram of the **birthyears** of senators in **youtubeWomen**. Add a comment describing the shape of the distribution.
+
+
+```{r}
+hist(as.numeric(youtubeWomen$year))
+#the histogram is like an evenly distributed bell curve 
+```

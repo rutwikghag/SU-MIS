@@ -1,0 +1,243 @@
+---
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+# Intro to Data Science HW 3
+
+##### Copyright Jeffrey Stanton, Jeffrey Saltz, and Jasmina Tacheva
+
+
+```{r}
+# Rutwik Ghag
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+```
+
+### Reminders of things to practice from last week: 
+Make a data frame		data.frame( ) <br>
+Row index of max/min	which.max( )  which.min( )<br>
+Sort value or order rows	sort( )   order( )<br>
+Descriptive statistics 	mean( ) sum( ) max( ) <br>
+Conditional statement	if (condition) “true stuff” else “false stuff”<br>
+
+### This Week: 
+Often, when you get a dataset, it is not in the format you want. You can (and should) use code to refine the dataset to become more useful. As Chapter 6 of Introduction to Data Science mentions, this is called “data munging.” In this homework, you will read in a dataset from the web and work on it (in a data frame) to improve its usefulness.
+
+
+## Part 1: Use read_csv( ) to read a CSV file from the web into a data frame:
+
+A.	Use R code to read directly from a URL on the web. Store the dataset into a new dataframe, called *dfComps*. <br>
+The URL is:    <br>
+"https://intro-datascience.s3.us-east-2.amazonaws.com/companies1.csv" <br>
+**Hint:** use read_csv( ), not read.csv( ). This is from the **tidyverse package**. Check the help to compare them.
+
+
+
+```{r}
+library(tidyverse)
+file <- "https://intro-datascience.s3.us-east-2.amazonaws.com/companies1.csv" # As taught in class
+help("read_csv")
+dfComps <- read_csv(file)
+dfComps
+```
+
+## Part 2: Create a new data frame that only contains companies with a homepage URL:
+
+B.	Use View( ), head( ), and tail( ) to examine the **dfComps** dataframe. <br>
+**Add a block comment that briefly describes what you see.**
+
+
+```{r}
+view(dfComps)
+head(dfComps)
+tail(dfComps)
+#we see a data frame of organizations in the US along with their details like URLs, last funding, etc
+
+```
+
+C.	Create a variable (called **noURL**) that has a value of **TRUE** if a company is missing a homepage URL. This variable should be a part of **dfComps**, not just a standalone vector.
+
+
+```{r}
+dfComps$noURL <- ifelse(is.na(dfComps$homepage_url), TRUE, FALSE) 
+view(dfComps)
+
+```
+
+D.	Use the table( ) command to summarize the contents of **noURL**. <br>
+**Write a comment interpreting what you see – how many companies are missing a homepage URL?**
+
+
+```{r}
+table(dfComps$noURL)
+```
+
+E.	Use **subsetting** to create a new dataframe that contains only the companies with homepage URLs (store that dataframe in **urlComps**).
+
+
+```{r}
+urlComps <- dfComps[dfComps$noURL == FALSE,]
+```
+
+F.	Use the dim() command on **urlComps** to confirm that the data frame contains **44,435** observations and **19** columns/variables.
+
+
+```{r}
+dim(urlComps)
+```
+
+## Part 3: Analyze the numeric variables in the dataframe.
+
+G.	How many **numeric variables** does the dataframe have? You can figure that out by looking at the output of **str(urlComps)**. 
+
+
+```{r}
+str(urlComps)
+```
+
+#There are 2 numeric variables
+
+H.	What is the average number of funding rounds for the companies in **urlComps**?
+
+
+```{r}
+mean(urlComps$funding_rounds)
+```
+
+I.	What year was the oldest company in the dataframe founded? <br>
+**Hint:** If you get a value of “NA,” most likely there are missing values in this variable which preclude R from properly calculating the min & max values. Instead of running, for example, mean(urlComps$founded_year), something like this will work for determining the average: 
+
+
+```{r}
+mean(urlComps$founded_year, na.rm=TRUE)
+
+```
+
+
+    Error in mean(urlComps$founded_year, na.rm = TRUE): object 'urlComps' not found
+    Traceback:
+
+
+    1. mean(urlComps$founded_year, na.rm = TRUE)
+
+
+Now write the code to get the oldest company
+
+
+```{r}
+min(urlComps$founded_year, na.rm=TRUE)
+```
+
+J.	Create another dataframe containing the companies that do not have homepage URLs. Find out the mean number of funding rounds for those companies. Compare that to the answer you recorded for problem H.
+
+
+```{r}
+newdfComps <- dfComps[dfComps$noURL == TRUE,]
+mean(newdfComps$funding_rounds)
+
+```
+
+## Part 4:  Use string operations to clean the data.
+
+K.	The **permalink variable** in **urlComps** contains the name of each company but the names are currently preceded by the prefix “/organization/”. We can use gsub() or str_replace (from tidyverse) to clean the values of this variable:
+
+
+```{r}
+urlComps$company <- gsub("/organization/", "", urlComps$permalink)
+
+library(tidyverse)
+#write the code to do the same cleanup, but with str_replace from tidyverse
+
+urlComps$company <- str_replace_all(urlComps$permalink, "/organization/", "")
+head(urlComps)
+```
+
+L.	Can you identify another variable which should be numeric but is currently coded as character? Use the as.numeric() function to add a new variable to **urlComps** which contains the values from the char variable as numbers. Do you notice anything about the number of NA values in this new column compared to the original “char” one?  
+
+
+```{r}
+as.numeric(urlComps$funding_total_usd)[1:50]
+
+```
+# The output is NA as we have spaces there
+
+
+
+M.	To ensure the char values are converted correctly, we first need to remove the spaces between the digits in the variable. Check if this works:
+
+
+```{r}
+library(stringi)
+urlComps$funding_new <- stri_replace_all_charclass(urlComps$funding_total_usd,"\\p{WHITE_SPACE}", "")
+#urlComps
+
+```
+
+N. You are now ready to convert **urlComps$funding_new** to numeric using as.numeric() again. Calculate the average funding amount for **urlComps**. If you get “NA,” try using the **na.rm=TRUE** argument from problem I.
+
+
+```{r}
+mean(as.numeric(urlComps$funding_new), na.rm = TRUE)
+```
+
+## Part 5:  Create a function to automate the process from L-N:
+
+O.	The following function should work most of the time. Make sure to run this code before trying to test it. That is how you make the new function known to R. **Add comments to each line explaining what it does:**
+
+
+```{r}
+library(stringi)
+convertCharToNum <- function(char_string) {     # Initialize a function to convert numbers to numbers
+  step1 <- stri_replace_all_charclass(char_string,"\\p{WHITE_SPACE}", "") # Remover whitespace
+  step2 <- as.numeric(step1)  # Converts them to numeric and stores the new series into step2
+  return(step2)
+}
+```
+
+P.	Run your new function on the **funding_total_usd** variable in **urlComps**:
+
+
+```{r}
+convertCharToNum(urlComps$funding_total_usd)[1:50]
+```
+
+Q. Create a new function, that does the same functionality as 'convertCharToNum', but uses tidyverse stringr commands
+
+
+```{r}
+library(tidyverse)
+convertCharToNumNew <- function(char_string) {
+  step1 <- str_replace_all(char_string, pattern = "\\p{WHITE_SPACE}", repl="")
+  step2 <- as.numeric(step1)
+  return(step2)
+}
+
+```
+
+
+```{r}
+#test the new function
+convertCharToNumNew(urlComps$funding_total_usd)[1:50]
+```
+
+R.	Assign the result of P to a variable in the dataframe:
+
+
+```{r}
+urlComps$result <- convertCharToNumNew(urlComps$funding_total_usd)
+```
+
+S. Calculate the average of this new variable (you may need to use the rm.na=TRUE argument again). Is it the same as the value you got in N? Explain.
+
+
+```{r}
+mean(urlComps$result, na.rm = TRUE)
+```
+#The values are the same

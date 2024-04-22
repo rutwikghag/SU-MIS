@@ -1,0 +1,180 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+# Intro to Data Science - HW 10
+
+##### Copyright 2021, Jeffrey Stanton, Jeffrey Saltz, and Jasmina Tacheva
+
+
+```{r}
+# Rutwik Ghag
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+```
+
+**Association mining** can be applied to many data problems beyond the well-known example of **finding relationships between different products in customer shopping data**. In this homework assignment, we will explore **real data** from the banking sector and look for **patterns associated with the likelihood of responding positively to a direct marketing campaign and signing up for a term deposit with the bank (stored in the variable “y”)**. <br>
+You can find out more about the variables in this dataset here: https://archive.ics.uci.edu/ml/datasets/bank+marketing
+
+## Part 1: Explore Data Set
+
+A.	Read the contents of the following URL to a dataframe called **bank** <br>
+https://intro-datascience.s3.us-east-2.amazonaws.com/bank-full.csv
+
+**Hint**: Even though this is a .csv file, chances are R won’t be able to read it in correctly using the read_csv() function. If you take a closer look at the contents of the URL file, you may notice each field is separated by a **semicolon** (;) rather than a comma. 
+
+In situations like this, consider using either read.csv or read.table, with two additional parameters. *sep=";"* defines how the data is seperated (the default is a comma), and *header=TRUE* defines that there is a header line in the dataset. 
+
+
+```{r}
+urll <- 'https://intro-datascience.s3.us-east-2.amazonaws.com/bank-full.csv'
+bank <- read.csv(urll, sep = ";",header = TRUE)
+
+```
+
+Make sure there are **41,188** rows and **21** columns in your **bank** df.
+
+
+```{r}
+summary(bank)
+
+nrow(bank)
+ncol(bank)
+# we used nrow and ncol to find the number of rows and columns
+```
+
+B.	Next, we will focus on some key factor variables from the dataset, and convert a few numeric ones to factor variables. Execute the following command.  Write a comment describing how the conversion for each numeric variable works and what are the variables in the resulting dataframe.
+
+
+```{r}
+bank_new <- data.frame(job=as.factor(bank$job),
+                     marital=as.factor(bank$marital),
+                     housing_loan=as.factor(bank$housing),
+                     young=as.factor(bank$age<median(bank$age)),
+                     contacted_more_than_once=as.factor(bank$campaign>1),
+                     contacted_before_this_campaign=as.factor(bank$previous<0),
+                     success=as.factor(bank$y))
+```
+
+C.	Count the number of successful term deposit sign-ups, using the table( ) command on the **success** variable.
+
+
+```{r}
+table(bank_new$success)
+# number of successful term deposits are 4640
+```
+
+D.	Express the results of problem C as percentages by sending the results of the table( ) command into the prop.table( ) command.
+
+
+```{r}
+dim(table(bank_new$success))
+prop.table(table(bank_new$success))*100
+proportions(table(bank_new$success))*100
+```
+
+E.	Using the same techniques, show the percentages for the **marital** and **housing_loan** variables as well.
+
+
+```{r}
+# multiplying by 100 to express the percentage from the proportions
+proportions(table(bank_new$marital))*100
+proportions(table(bank_new$housing_loan))*100
+```
+
+## Part 2: Coerce the data frame into transactions
+
+F.	Install and library two packages: **arules** and **arulesViz**.
+
+
+```{r}
+#install.packages("arules")
+library(arules)
+#install.packages("arulesViz")
+library(arulesViz)
+```
+
+G.	Coerce the **bank_new** dataframe into a **sparse transactions matrix** called **bankX**.
+
+
+```{r}
+bankX <- as(bank_new,"transactions")
+summary(bankX)
+
+```
+
+H.	Use the itemFrequency( ) and itemFrequencyPlot( ) commands to explore the contents of **bankX**. What do you see?
+
+
+```{r}
+itemFrequency(bankX)
+# In the item frequency plot I see frequency of items in a particular column as a proportion of the total number of items present in that respective column 
+
+itemFrequencyPlot(bankX,topN = 15)
+# Now When we plot them we get the same thing but in an ordered way in which the highest frequency is at the left most side. The number 15 shows the top 15 frequencies histogram graphs
+```
+
+I.	This is a fairly large dataset, so we will explore only the first 10 observations in the **bankX** transaction matrix: 
+
+
+```{r}
+inspect(bankX[1:10]) 
+
+```
+
+Explain the difference between **bank_new** and **bankX** in a block comment:
+
+
+```{r}
+#install.packages("XQuartz")
+View(bank_new)
+#View(bankX)
+summary(bank_new)
+#summary(bankX)
+
+# bankX is a sparse transaction matrix whereas bank_new is the dataframe. Though the data might be same in bankX and bank_new since bank_new was created from the columns of bank but first converting them in factor values, how the values are represented is different. Using summary in them shows us the different way of representation gives us different analysis. When using View we can see that bankX is more like an object whereas bank_new is a databa se with entries
+
+```
+
+
+
+
+## Part 3: Use arules to discover patterns
+
+**Support** is the proportion of times that a particular set of items occurs relative to the whole dataset. <br>
+**Confidence** is proportion of times that the consequent occurs when the antecedent is present. <br>
+
+J.	Use **apriori** to generate a set of rules with support over 0.005 and confidence over 0.3, and trying to predict who successfully signed up for a term deposit. <br>
+**Hint:** You need to define the **right-hand side rule (rhs)**.
+
+
+```{r}
+ruleset <- apriori(bankX,parameter = list(supp= 0.0051, conf = 0.31),control=list(verbose=F), appearance = list(default="lhs",rhs=("success=yes")))
+# bankX is our sparse transaction matrix. I used values slighly above or else I was not getting any rules
+```
+
+K.	Use inspect() to review of the **ruleset**. 
+
+
+```{r}
+inspectDT(ruleset)
+```
+
+L.	Use the output of inspect( ) or inspectDT( ) and describe **any 2 rules** the algorithm found.  
+
+
+```{r}
+inspect(ruleset[c(5)])
+# these 2 rules set have the same support , confidence, coverage,lift and count. But yet they are somewhat different scenarios
+# LHS for the first one is {job=student,marital=single,young=TRUE}
+# LHS for the second one is {job=student,marital=single,young=TRUE,contacted_before_this_campaign=FALSE}}
+# thus one can say if we want the scenario who successfully signed up for a term deposit, there is no need to co ntact them before the campaign for this particular scenario
+inspect(ruleset[c(8)])
+```
